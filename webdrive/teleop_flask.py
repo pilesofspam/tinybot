@@ -33,16 +33,38 @@
 ##########################################################################
 from __future__ import print_function # In python 2.7
 import sys
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, jsonify
 import pigpio
 import json
 import sys
+import zmq
+
+###############
+# Start with ZMQ- messaging library to get our info in and out
+# of the C functions that are running pigpio
+###############
+# Socket to talk to server
+bumperPort = 5556
+context = zmq.Context()
+bumperSocket = context.socket(zmq.SUB)
+bumperSocket.connect ("tcp://localhost:%s" % bumperPort)
+bumperSocket.setsockopt(zmq.SUBSCRIBE, '') # subscribe to all topics
+bumperSocket.setsockopt(zmq.CONFLATE, True) # only keep the last message
+
+distancePort = 5563
+distanceSocket = context.socket(zmq.SUB)
+distanceSocket.connect ("tcp://localhost:%s" % distancePort)
+distanceSocket.setsockopt(zmq.SUBSCRIBE, '') # subscribe to all topics
+distanceSocket.setsockopt(zmq.CONFLATE, True) # only keep the last message
 
 ###############
 # Defines, to keep track of pins
 ###############
 leftPWM = 12
 rightPWM = 13
+
+b=7
+d=56.5
 
 ###############
 # Setup stuff.  GPIO directions, etc
@@ -175,7 +197,7 @@ def setBackRight():
 
 @app.route('/fleft')
 def setFrontLeft():
-    direction('backward')
+    direction('forward')
     go(steadySpeed/2, steadySpeed)
     return ("nothing")
 
@@ -205,9 +227,26 @@ def speed():
     return ("nothing")
     
 
+@app.route('/distance')
+def distance():
+    try:
+        string = distanceSocket.recv(flags=zmq.NOBLOCK)
+        global d
+        d=float(string)
+    except:
+        bumperBuffer=False
+    return (jsonify(d))
 
-
-
+@app.route('/bumpers')
+def bumpers():
+    bumperBuffer=True
+    try:
+        string = bumperSocket.recv(flags=zmq.NOBLOCK)
+        global b
+        b=int(string)
+    except:
+        bumperBuffer=False
+    return (jsonify(b))
 
 ###################
 # Here's where we specify the server
