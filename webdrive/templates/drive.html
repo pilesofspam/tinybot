@@ -71,6 +71,10 @@ because nothing is returned and you don't leave this page.
 <div class="slider-wrapper">
   <input type="range" min="0" max="100" value="70" step="1" id="botrange" onmouseup="mouseUp()">
 </div>
+Distance:<b id='DISTANCE'>0</b> Bumpers:<b id='BUMPERS'>0</b>
+<center>
+<img src="http://73.54.187.139:8080/?action=stream" />
+</center>
 </body>
 </html>
 
@@ -180,8 +184,28 @@ function Player() {
   	X="STRAIGHT"
   }
   Drive();
+  Bumpers();
+  Distance();
 }
 
+
+function Distance(){
+  $.getJSON('/distance',
+    function(data){
+      document.getElementById('DISTANCE').innerHTML = data;
+    })
+
+
+}
+
+function Bumpers(){
+  $.getJSON('/bumpers',
+    function(data){
+      document.getElementById('BUMPERS').innerHTML = data;
+    })
+
+
+}
 
 // function Drive- takes either the Player or the button state and
 // figures out what to do
